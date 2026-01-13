@@ -1,0 +1,60 @@
+{
+  "sites": [
+    {
+      "id": "site1",
+      "siteName": "Branding Bahia",
+      "description": "Dashboard completo para gerenciamento de landing page",
+      "planType": "pro",
+      "logoUrl": "/branding-bahia.png",
+      "devAuthor": "Mavellium",
+      "theme": {
+        "mainColor": "#0C8BD2",
+        "secondColor": "#fff",
+        "boxShadowColor": "#fff",
+        "asideColor": "#111",
+        "borderColor": "#0C8BD2",
+        "backgroundColor": "#111",
+        "backgroundBody": "#000"
+      },
+      "menuItems": [
+        {
+          "type": "item",
+          "name": "Dashboard",
+          "icon": "LayoutDashboard",
+          "href": "/"
+        },
+        {
+          "type": "item",
+          "name": "Detalhes",
+          "icon": "HelpCircle",
+          "href": "/details"
+        },
+        {
+          "type": "item",
+          "name": "Faq",
+          "icon": "HelpCircle",
+          "href": "/faq"
+        },
+        {
+          "type": "item",
+          "name": "Hightlight",
+          "icon": "HelpCircle",
+          "href": "/hightlight"
+        },
+        {
+          "type": "item",
+          "name": "Newsletter",
+          "icon": "HelpCircle",
+          "href": "/news"
+        },
+        {
+          "type": "item",
+          "name": "Setores",
+          "icon": "HelpCircle",
+          "href": "/setors"
+        }
+      ]
+    }
+  ],
+  "defaultSiteId": "site1"
+}
