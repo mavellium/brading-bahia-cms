@@ -2,9 +2,6 @@ import { NextRequest, NextResponse } from "next/server";
 import { put } from "@vercel/blob";
 import prisma from "@/lib/prisma";
 
-/* =========================================================
-   Upload helper
-========================================================= */
 async function uploadToBlob(file: File) {
   const blob = await put(`${Date.now()}-${file.name}`, file, {
     access: "public",
@@ -15,9 +12,6 @@ async function uploadToBlob(file: File) {
   return blob.url;
 }
 
-/* =========================================================
-   UPSERT (POST e PUT usam o mesmo código)
-========================================================= */
 async function handleUpsert(
   req: NextRequest,
   context: { params: Promise<{ type: string; subtype: string }> }
@@ -29,16 +23,23 @@ async function handleUpsert(
   const values = rawValues ? JSON.parse(rawValues as string) : [];
   const safeValues = Array.isArray(values) ? values : [];
 
-  // uploads
+  // Processar uploads de arquivos
   for (let i = 0; i < safeValues.length; i++) {
     const file = form.get(`file${i}`) as File | null;
     if (file && file.size > 0) {
       const url = await uploadToBlob(file);
-      safeValues[i].image = url;
+      
+      // IMPORTANTE: Para o tipo "highlights", salvar no campo "video"
+      // Para outros tipos, pode salvar no campo "image" como antes
+      if (type === "highlights") {
+        safeValues[i].video = url;
+      } else {
+        safeValues[i].image = url;
+      }
     }
   }
 
-  // 🔥 UPSERT POR type + subtype
+  // UPSERT POR type + subtype
   const record = await prisma.formData.upsert({
     where: {
       type_subtype: {
@@ -59,9 +60,6 @@ async function handleUpsert(
   return NextResponse.json(record);
 }
 
-/* =========================================================
-   POST
-========================================================= */
 export async function POST(
   req: NextRequest,
   context: { params: Promise<{ type: string; subtype: string }> }
@@ -74,9 +72,6 @@ export async function POST(
   }
 }
 
-/* =========================================================
-   PUT
-========================================================= */
 export async function PUT(
   req: NextRequest,
   context: { params: Promise<{ type: string; subtype: string }> }
@@ -89,9 +84,6 @@ export async function PUT(
   }
 }
 
-/* =========================================================
-   GET
-========================================================= */
 export async function GET(
   _req: NextRequest,
   context: { params: Promise<{ type: string; subtype: string }> }
@@ -107,9 +99,6 @@ export async function GET(
   return NextResponse.json(record ?? null);
 }
 
-/* =========================================================
-   DELETE
-========================================================= */
 export async function DELETE(
   _req: NextRequest,
   context: { params: Promise<{ type: string; subtype: string }> }

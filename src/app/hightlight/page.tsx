@@ -154,13 +154,13 @@ function SortableHighlightItem({
                     </h4>
                   )}
                   {hasText && hasVideo && hasDuration ? (
-                    <span className="px-2 py-1 text-xs bg-[var(--color-success)]/20 text-green-300 rounded-full border border-[var(--color-success)]/30">
-                      Completo
-                    </span>
-                  ) : (
-                    <span className="px-2 py-1 text-xs bg-[var(--color-warning)]/20 text-red rounded-full border border-[var(--color-warning)]/30">
-                      Incompleto
-                    </span>
+                            <span className="px-2 py-1 text-xs bg-green-900/30 text-green-300 rounded-full">
+                              Completo
+                            </span>
+                          ) : (
+                            <span className="px-2 py-1 text-xs bg-yellow-900/30 text-yellow-300 rounded-full">
+                              Incompleto
+                            </span>
                   )}
                 </div>
               </div>
@@ -402,6 +402,7 @@ export default function HighlightsPage({
       
       if (exists) fd.append("id", exists.id);
       
+      // IMPORTANTE: Remover o campo videoFile antes de stringify
       fd.append(
         "values",
         JSON.stringify(
@@ -411,12 +412,15 @@ export default function HighlightsPage({
 
       filteredList.forEach((item, i) => {
         if (item.videoFile) {
-          fd.append(`video${i}`, item.videoFile);
+          // IMPORTANTE: Usar `file${i}` para o servidor, não `video${i}`
+          fd.append(`file${i}`, item.videoFile);
         }
       });
 
       const method = exists ? "PUT" : "POST";
 
+      console.log('Enviando para:', `${apiBase}/${type}`, 'Método:', method);
+      
       const res = await fetch(`${apiBase}/${type}`, {
         method,
         body: fd,
@@ -440,7 +444,7 @@ export default function HighlightsPage({
       setSuccess(true);
       setTimeout(() => setSuccess(false), 3000);
     } catch (err: any) {
-      console.error(err);
+      console.error('Erro no submit:', err);
       setErrorMsg(err.message);
     } finally {
       setLoading(false);
@@ -517,7 +521,8 @@ export default function HighlightsPage({
 
     filteredList.forEach((item, i) => {
       if (item.videoFile) {
-        fd.append(`video${i}`, item.videoFile);
+        // IMPORTANTE: Usar `file${i}` para o servidor
+        fd.append(`file${i}`, item.videoFile);
       }
     });
 

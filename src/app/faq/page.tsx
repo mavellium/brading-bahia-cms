@@ -141,13 +141,13 @@ function SortableFAQItem({
                     </h4>
                   )}
                   {hasQuestion && hasAnswer ? (
-                    <span className="px-2 py-1 text-xs bg-[var(--color-success)]/20 text-green-300 rounded-full border border-[var(--color-success)]/30">
-                      Completo
-                    </span>
-                  ) : (
-                    <span className="px-2 py-1 text-xs bg-[var(--color-warning)]/20 text-red rounded-full border border-[var(--color-warning)]/30">
-                      Incompleto
-                    </span>
+                            <span className="px-2 py-1 text-xs bg-green-900/30 text-green-300 rounded-full">
+                              Completo
+                            </span>
+                          ) : (
+                            <span className="px-2 py-1 text-xs bg-yellow-900/30 text-yellow-300 rounded-full">
+                              Incompleto
+                            </span>
                   )}
                 </div>
               </div>
