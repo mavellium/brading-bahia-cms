@@ -1,407 +1,166 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
-import { useMemo, useState, useCallback, useId, useEffect, useRef } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { useListManagement } from "@/hooks/useListManagement";
+import { useState, useRef } from "react";
+import { motion } from "framer-motion";
+import { ManageLayout } from "@/components/Manage/ManageLayout";
 import { Card } from "@/components/Card";
 import { Input } from "@/components/Input";
 import { TextArea } from "@/components/TextArea";
-import { Button } from "@/components/Button";
 import { 
-  HelpCircle, 
-  GripVertical, 
-  ArrowUpDown, 
-  AlertCircle, 
-  CheckCircle2, 
+  Layout,
+  HelpCircle,
+  MessageSquare,
+  Type,
+  Plus,
   Trash2,
+  GripVertical,
+  CheckCircle2,
+  AlertCircle,
   XCircle,
+  Hash,
+  Sparkles,
+  Link,
+  MessageCircle,
+  ChevronDown,
+  ChevronUp,
+  List,
+  Zap,
+  Clock,
+  Users,
   Search,
-  X,
-  FileText
+  Target
 } from "lucide-react";
-import { ManageLayout } from "@/components/Manage/ManageLayout";
+import { FeedbackMessages } from "@/components/Manage/FeedbackMessages";
 import { FixedActionBar } from "@/components/Manage/FixedActionBar";
 import { DeleteConfirmationModal } from "@/components/Manage/DeleteConfirmationModal";
-import { FeedbackMessages } from "@/components/Manage/FeedbackMessages";
-import {
-  DndContext,
-  closestCenter,
-  KeyboardSensor,
-  PointerSensor,
-  useSensor,
-  useSensors,
-  DragEndEvent,
-} from "@dnd-kit/core";
-import {
-  arrayMove,
-  SortableContext,
-  sortableKeyboardCoordinates,
-  verticalListSortingStrategy,
-} from "@dnd-kit/sortable";
-import { useSortable } from "@dnd-kit/sortable";
-import { CSS } from "@dnd-kit/utilities";
+import { SectionHeader } from "@/components/SectionHeader";
+import Loading from "@/components/Loading";
+import { useJsonManagement } from "@/hooks/useJsonManagement";
+import { Button } from "@/components/Button";
+import { useSite } from "@/context/site-context";
 
 interface FAQItem {
-  id?: string;
   question: string;
   answer: string;
 }
 
-function SortableFAQItem({
-  item,
-  index,
-  originalIndex,
-  isLastInOriginalList,
-  isLastAndEmpty,
-  showValidation,
-  itemList,
-  handleChange,
-  openDeleteSingleModal,
-  setNewItemRef,
-}: {
-  item: FAQItem;
-  index: number;
-  originalIndex: number;
-  isLastInOriginalList: boolean;
-  isLastAndEmpty: boolean;
-  showValidation: boolean;
-  itemList: FAQItem[];
-  handleChange: (index: number, field: keyof FAQItem, value: any) => void;
-  openDeleteSingleModal: (index: number, title: string) => void;
-  setNewItemRef?: (node: HTMLDivElement | null) => void;
-}) {
-  const stableId = useId();
-  const sortableId = item.id || `faq-${index}-${stableId}`;
-
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-    isDragging,
-  } = useSortable({ id: sortableId });
-
-  const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-    opacity: isDragging ? 0.5 : 1,
-  };
-
-  const hasQuestion = item.question.trim() !== "";
-  const hasAnswer = item.answer.trim() !== "";
-
-  const setRefs = useCallback(
-    (node: HTMLDivElement | null) => {
-      setNodeRef(node);
-      
-      if (isLastAndEmpty && setNewItemRef) {
-        setNewItemRef(node);
-      }
-    },
-    [setNodeRef, isLastAndEmpty, setNewItemRef]
-  );
-
-  return (
-    <div
-      ref={setRefs}
-      style={style}
-      className={`relative ${isDragging ? 'z-50' : ''}`}
-    >
-      <Card className={`mb-4 overflow-hidden transition-all duration-300 ${
-        isLastInOriginalList && showValidation && (!hasQuestion || !hasAnswer) 
-          ? 'ring-2 ring-[var(--color-danger)]' 
-          : ''
-      } ${isDragging ? 'shadow-lg scale-105' : ''} bg-[var(--color-background)] border-l-4 border-[var(--color-primary)]`}>
-        <div className="p-6">
-          <div className="flex items-start justify-between mb-6">
-            <div className="flex items-center gap-3">
-              <button
-                type="button"
-                className="cursor-grab active:cursor-grabbing text-[var(--color-secondary)]/70 hover:text-[var(--color-primary)] transition-colors p-2 rounded-lg hover:bg-[var(--color-background)]/50"
-                {...attributes}
-                {...listeners}
-              >
-                <GripVertical className="w-5 h-5" />
-              </button>
-              <div className="flex flex-col">
-                <div className="flex items-center gap-2 text-sm text-[var(--color-secondary)]/70">
-                  <ArrowUpDown className="w-4 h-4" />
-                  <span>Posição: {index + 1}</span>
-                </div>
-                <div className="flex items-center gap-2 mt-1">
-                  {hasQuestion ? (
-                    <h4 className="font-medium text-[var(--color-secondary)]">
-                      {item.question.length > 50 ? `${item.question.substring(0, 50)}...` : item.question}
-                    </h4>
-                  ) : (
-                    <h4 className="font-medium text-[var(--color-secondary)]/50">
-                      FAQ sem pergunta
-                    </h4>
-                  )}
-                  {hasQuestion && hasAnswer ? (
-                            <span className="px-2 py-1 text-xs bg-green-900/30 text-green-300 rounded-full">
-                              Completo
-                            </span>
-                          ) : (
-                            <span className="px-2 py-1 text-xs bg-yellow-900/30 text-yellow-300 rounded-full">
-                              Incompleto
-                            </span>
-                  )}
-                </div>
-              </div>
-            </div>
-            
-            <Button
-              type="button"
-              onClick={() => openDeleteSingleModal(originalIndex, item.question || "FAQ sem pergunta")}
-              variant="danger"
-              className="whitespace-nowrap bg-[var(--color-danger)] hover:bg-[var(--color-danger)]/90 border-none flex items-center gap-2"
-              disabled={itemList.length <= 1}
-            >
-              <Trash2 className="w-4 h-4" />
-              Remover
-            </Button>
-          </div>
-          
-          <div className="grid grid-cols-1 gap-6">
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-[var(--color-secondary)] mb-2 flex items-center gap-2">
-                  <FileText className="w-4 h-4" />
-                  Pergunta <span className="text-xs text-[var(--color-danger)]">*</span>
-                </label>
-                <Input
-                  type="text"
-                  placeholder="Ex: Quais são os métodos de pagamento aceitos?"
-                  value={item.question}
-                  onChange={(e: any) => handleChange(originalIndex, "question", e.target.value)}
-                  className="bg-[var(--color-background-body)] border-[var(--color-border)] text-[var(--color-secondary)] font-medium"
-                  autoFocus={isLastAndEmpty}
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-[var(--color-secondary)] mb-2 flex items-center gap-2">
-                  <FileText className="w-4 h-4" />
-                  Resposta <span className="text-xs text-[var(--color-danger)]">*</span>
-                </label>
-                <TextArea
-                  placeholder="Digite a resposta detalhada..."
-                  value={item.answer}
-                  onChange={(e: any) => handleChange(originalIndex, "answer", e.target.value)}
-                  rows={5}
-                  className="bg-[var(--color-background-body)] border-[var(--color-border)] text-[var(--color-secondary)] resize-none"
-                />
-              </div>
-            </div>
-          </div>
-        </div>
-      </Card>
-    </div>
-  );
+interface CTA {
+  text: string;
+  link: string;
 }
 
-export default function CreateFAQ({ 
-  type = "faq", 
-  subtype = "branding-bahia"
-}: { 
-  type: string; 
-  subtype: string; 
-}) {
-  const defaultFAQItem = useMemo(() => ({ 
-    question: "", 
-    answer: "" 
-  }), []);
+interface FAQsData {
+  faqs: {
+    title: string;
+    subtitle: string;
+    questions: FAQItem[];
+    cta: CTA;
+  };
+}
 
-  const [localFAQs, setLocalFAQs] = useState<FAQItem[]>([]);
-  const [searchTerm, setSearchTerm] = useState("");
+const defaultFAQsData: FAQsData = {
+  faqs: {
+    title: "",
+    subtitle: "",
+    questions: [
+      {
+        question: "",
+        answer: ""
+      }
+    ],
+    cta: {
+      text: "",
+      link: ""
+    }
+  }
+};
 
-  const apiBase = `/api/${subtype}/form`;
+const mergeWithDefaults = (apiData: any, defaultData: FAQsData): FAQsData => {
+  if (!apiData) return defaultData;
+  
+  return {
+    faqs: {
+      title: apiData.faqs?.title || defaultData.faqs.title,
+      subtitle: apiData.faqs?.subtitle || defaultData.faqs.subtitle,
+      questions: apiData.faqs?.questions || defaultData.faqs.questions,
+      cta: {
+        text: apiData.faqs?.cta?.text || defaultData.faqs.cta.text,
+        link: apiData.faqs?.cta?.link || defaultData.faqs.cta.link,
+      }
+    }
+  };
+};
+
+export default function FAQsPage() {
+  const { currentSite } = useSite();
+  const currentPlanType = currentSite.planType;
+  const currentFAQsLimit = currentPlanType === 'pro' ? 12 : 8;
 
   const {
-    list: faqList,
-    setList: setFAQList,
+    data: pageData,
     exists,
     loading,
-    setLoading,
     success,
-    setSuccess,
     errorMsg,
-    setErrorMsg,
-    showValidation,
     deleteModal,
-    currentPlanLimit,
-    currentPlanType,
-    openDeleteSingleModal,
+    updateNested,
+    save,
     openDeleteAllModal,
     closeDeleteModal,
     confirmDelete,
-  } = useListManagement<FAQItem>({
-    type,
-    apiPath: `${apiBase}/${type}`,
-    defaultItem: defaultFAQItem,
-    validationFields: ["question", "answer"]
+  } = useJsonManagement<FAQsData>({
+    apiPath: "/api/tegbe-institucional/json/faqs",
+    defaultData: defaultFAQsData,
+    mergeFunction: mergeWithDefaults,
   });
 
-  // Sincroniza FAQs locais
-  useEffect(() => {
-    setLocalFAQs(faqList);
-  }, [faqList]);
+  // Estados para drag & drop
+  const [draggingFAQ, setDraggingFAQ] = useState<number | null>(null);
+  const [expandedSections, setExpandedSections] = useState({
+    header: true,
+    questions: false,
+    cta: false,
+  });
 
+  // Estados para perguntas expandidas individualmente
+  const [expandedQuestions, setExpandedQuestions] = useState<number[]>([]);
+
+  const toggleQuestion = (index: number) => {
+    setExpandedQuestions(prev => 
+      prev.includes(index) 
+        ? prev.filter(i => i !== index)
+        : [...prev, index]
+    );
+  };
+
+  // Referência para novo item
   const newFAQRef = useRef<HTMLDivElement>(null);
 
-  const setNewItemRef = useCallback((node: HTMLDivElement | null) => {
-    if (node) {
-      newFAQRef.current = node;
-    }
-  }, []);
-
-  const sensors = useSensors(
-    useSensor(PointerSensor, {
-      activationConstraint: {
-        distance: 8,
-      },
-    }),
-    useSensor(KeyboardSensor, {
-      coordinateGetter: sortableKeyboardCoordinates,
-    })
-  );
-
-  const handleDragEnd = (event: DragEndEvent) => {
-    const { active, over } = event;
-
-    if (!over) return;
-
-    if (active.id !== over.id) {
-      const oldIndex = localFAQs.findIndex((item) => 
-        item.id === active.id || item.id?.includes(active.id as string)
-      );
-      const newIndex = localFAQs.findIndex((item) => 
-        item.id === over.id || item.id?.includes(over.id as string)
-      );
-
-      if (oldIndex !== -1 && newIndex !== -1) {
-        const newList = arrayMove(localFAQs, oldIndex, newIndex);
-        setLocalFAQs(newList);
-        setFAQList(newList);
-      }
-    }
+  const toggleSection = (section: keyof typeof expandedSections) => {
+    setExpandedSections((prev) => ({
+      ...prev,
+      [section]: !prev[section],
+    }));
   };
 
-  const handleSubmit = async (e?: React.FormEvent) => {
-    if (e) e.preventDefault();
-
-    setLoading(true);
-    setSuccess(false);
-    setErrorMsg("");
-
-    try {
-      const filteredList = localFAQs.filter(
-        item => item.question.trim() && item.answer.trim()
-      );
-
-      if (!filteredList.length) {
-        setErrorMsg("Adicione ao menos um FAQ completo (com pergunta e resposta).");
-        setLoading(false);
-        return;
-      }
-
-      const fd = new FormData();
-      
-      if (exists) fd.append("id", exists.id);
-      
-      fd.append(
-        "values",
-        JSON.stringify(
-          filteredList.map(item => item)
-        )
-      );
-
-      const method = exists ? "PUT" : "POST";
-
-      const res = await fetch(`${apiBase}/${type}`, {
-        method,
-        body: fd,
-      });
-
-      if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.error || "Erro ao salvar FAQs");
-      }
-
-      const saved = await res.json();
-
-      const normalized = saved.values.map((v: any, i: number) => ({
-        ...v,
-        id: v.id || `faq-${Date.now()}-${i}`,
-      }));
-
-      setLocalFAQs(normalized);
-      setFAQList(normalized);
-      setSuccess(true);
-      setTimeout(() => setSuccess(false), 3000);
-    } catch (err: any) {
-      console.error(err);
-      setErrorMsg(err.message);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleChange = (index: number, field: keyof FAQItem, value: any) => {
-    const newList = [...localFAQs];
-    newList[index] = { ...newList[index], [field]: value };
-    setLocalFAQs(newList);
-    setFAQList(newList);
-  };
-
-  const updateFAQs = async (list: FAQItem[]) => {
-    if (!exists) return;
-
-    const filteredList = list.filter(
-      item => item.question.trim() || item.answer.trim()
-    );
-
-    const fd = new FormData();
-    
-    fd.append("id", exists.id);
-    
-    fd.append(
-      "values",
-      JSON.stringify(
-        filteredList.map(item => item)
-      )
-    );
-
-    const res = await fetch(`${apiBase}/${type}`, {
-      method: "PUT",
-      body: fd,
-    });
-
-    if (!res.ok) {
-      const errorData = await res.json();
-      throw new Error(errorData.error || "Falha ao atualizar dados");
-    }
-
-    const updated = await res.json();
-    return updated;
-  };
-
-  const handleAddFAQItem = () => {
-    if (localFAQs.length >= currentPlanLimit) {
+  // Funções para manipular a lista de FAQs
+  const handleAddFAQ = () => {
+    const questions = pageData.faqs.questions;
+    if (questions.length >= currentFAQsLimit) {
       return false;
     }
     
-    const newItem: FAQItem = {
-      question: '',
-      answer: ''
+    const newFAQ: FAQItem = {
+      question: "",
+      answer: ""
     };
     
-    const updated = [...localFAQs, newItem];
-    setLocalFAQs(updated);
-    setFAQList(updated);
+    const updated = [...questions, newFAQ];
+    updateNested('faqs.questions', updated);
+    
+    // Expande automaticamente a nova pergunta
+    setExpandedQuestions(prev => [...prev, questions.length]);
     
     setTimeout(() => {
       newFAQRef.current?.scrollIntoView({ 
@@ -413,185 +172,488 @@ export default function CreateFAQ({
     return true;
   };
 
-  const filteredFAQItems = useMemo(() => {
-    let filtered = [...localFAQs];
+  const handleUpdateFAQ = (index: number, field: keyof FAQItem, value: string) => {
+    const questions = pageData.faqs.questions;
+    const updated = [...questions];
     
-    if (searchTerm) {
-      const term = searchTerm.toLowerCase();
-      filtered = filtered.filter(item => 
-        item.question.toLowerCase().includes(term) ||
-        item.answer.toLowerCase().includes(term)
+    if (index >= 0 && index < updated.length) {
+      updated[index] = {
+        ...updated[index],
+        [field]: value
+      };
+      updateNested('faqs.questions', updated);
+    }
+  };
+
+  const handleRemoveFAQ = (index: number) => {
+    const questions = pageData.faqs.questions;
+    
+    if (questions.length <= 1) {
+      // Mantém pelo menos uma pergunta vazia
+      updateNested('faqs.questions', [{ question: "", answer: "" }]);
+      setExpandedQuestions([]);
+    } else {
+      const updated = questions.filter((_, i) => i !== index);
+      updateNested('faqs.questions', updated);
+      
+      // Remove o índice das perguntas expandidas
+      setExpandedQuestions(prev => 
+        prev.filter(i => i !== index).map(i => i > index ? i - 1 : i)
       );
     }
+  };
+
+  // Funções de drag & drop para FAQs
+  const handleFAQDragStart = (e: React.DragEvent, index: number) => {
+    e.dataTransfer.setData('text/plain', index.toString());
+    e.currentTarget.classList.add('dragging');
+    setDraggingFAQ(index);
+  };
+
+  const handleFAQDragOver = (e: React.DragEvent, index: number) => {
+    e.preventDefault();
     
-    return filtered;
-  }, [localFAQs, searchTerm]);
+    if (draggingFAQ === null || draggingFAQ === index) return;
+    
+    const questions = pageData.faqs.questions;
+    const updated = [...questions];
+    const draggedFAQ = updated[draggingFAQ];
+    
+    // Remove o item arrastado
+    updated.splice(draggingFAQ, 1);
+    
+    // Insere na nova posição
+    const newIndex = index > draggingFAQ ? index : index;
+    updated.splice(newIndex, 0, draggedFAQ);
+    
+    updateNested('faqs.questions', updated);
+    
+    // Ajusta os índices das perguntas expandidas
+    setExpandedQuestions(prev => {
+      const newExpanded = [...prev];
+      const draggedExpandedIndex = newExpanded.indexOf(draggingFAQ);
+      
+      if (draggedExpandedIndex !== -1) {
+        newExpanded[draggedExpandedIndex] = newIndex;
+      }
+      
+      return newExpanded.map(i => {
+        if (i === draggingFAQ) return newIndex;
+        if (i > draggingFAQ && i <= newIndex) return i - 1;
+        if (i < draggingFAQ && i >= newIndex) return i + 1;
+        return i;
+      }).sort((a, b) => a - b);
+    });
+    
+    setDraggingFAQ(newIndex);
+  };
 
-  const isFAQLimitReached = localFAQs.length >= currentPlanLimit;
-  const canAddNewItem = !isFAQLimitReached;
-  const faqCompleteCount = localFAQs.filter(item => 
-    item.question.trim() !== '' && 
-    item.answer.trim() !== ''
-  ).length;
-  const faqTotalCount = localFAQs.length;
+  const handleFAQDragEnd = (e: React.DragEvent) => {
+    e.currentTarget.classList.remove('dragging');
+    setDraggingFAQ(null);
+  };
 
-  const faqValidationError = isFAQLimitReached 
-    ? `Você chegou ao limite do plano ${currentPlanType} (${currentPlanLimit} itens).`
+  const handleDragEnter = (e: React.DragEvent) => {
+    e.currentTarget.classList.add('drag-over');
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.currentTarget.classList.remove('drag-over');
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.currentTarget.classList.remove('drag-over');
+  };
+
+  const handleSubmit = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    
+    try {
+      await save();
+    } catch (err) {
+      console.error("Erro ao salvar:", err);
+    }
+  };
+
+  // Validações
+  const isFAQValid = (faq: FAQItem): boolean => {
+    return faq.question.trim() !== '' && faq.answer.trim() !== '';
+  };
+
+  const isFAQsLimitReached = pageData.faqs.questions.length >= currentFAQsLimit;
+  const canAddNewFAQ = !isFAQsLimitReached;
+  const faqsCompleteCount = pageData.faqs.questions.filter(isFAQValid).length;
+  const faqsTotalCount = pageData.faqs.questions.length;
+
+  const faqsValidationError = isFAQsLimitReached 
+    ? `Você chegou ao limite do plano ${currentPlanType} (${currentFAQsLimit} perguntas).`
     : null;
 
   const calculateCompletion = () => {
     let completed = 0;
     let total = 0;
 
-    // Cada FAQ tem 2 campos (question, answer)
-    total += localFAQs.length * 2;
-    localFAQs.forEach(item => {
-      if (item.question.trim()) completed++;
-      if (item.answer.trim()) completed++;
+    // Title (2 campos)
+    total += 2;
+    if (pageData.faqs.title.trim()) completed++;
+    if (pageData.faqs.subtitle.trim()) completed++;
+
+    // Questions (2 campos por pergunta)
+    total += pageData.faqs.questions.length * 2;
+    pageData.faqs.questions.forEach(faq => {
+      if (faq.question.trim()) completed++;
+      if (faq.answer.trim()) completed++;
     });
+
+    // CTA (2 campos)
+    total += 2;
+    if (pageData.faqs.cta.text.trim()) completed++;
+    if (pageData.faqs.cta.link.trim()) completed++;
 
     return { completed, total };
   };
 
   const completion = calculateCompletion();
 
-  const stableIds = useMemo(
-    () => localFAQs.map((item, index) => item.id ?? `faq-${index}`),
-    [localFAQs]
-  );
+  if (loading && !exists) {
+    return <Loading layout={Layout} exists={!!exists} />;
+  }
 
   return (
     <ManageLayout
       headerIcon={HelpCircle}
-      title="FAQs"
-      description="Gerencie as perguntas frequentes da sua empresa"
+      title="Seção FAQ (Perguntas Frequentes)"
+      description="Gerencie as perguntas frequentes e respostas da sua empresa"
       exists={!!exists}
-      itemName="FAQ"
+      itemName="FAQs"
     >
       <form onSubmit={handleSubmit} className="space-y-6 pb-32">
-        {/* Cabeçalho de Controle */}
-        <Card className="p-6 bg-[var(--color-background)]">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
-            <div>
-              <h3 className="text-lg font-semibold text-[var(--color-secondary)] mb-2">
-                Gerenciamento de FAQs
-              </h3>
-              <div className="flex items-center gap-2 mt-1">
-                <div className="flex items-center gap-1">
-                  <CheckCircle2 className="w-4 h-4 text-green-300" />
-                  <span className="text-sm text-[var(--color-secondary)]/70">
-                    {faqCompleteCount} de {faqTotalCount} completos
-                  </span>
-                </div>
-                <span className="text-sm text-[var(--color-secondary)]/50">•</span>
-                <span className="text-sm text-[var(--color-secondary)]/70">
-                  Limite: {currentPlanType === 'pro' ? '10' : '5'} itens
-                </span>
-              </div>
-            </div>
-          </div>
-
-          {/* Barra de busca */}
-          <div className="space-y-2">
-            <label className="block text-sm font-medium text-[var(--color-secondary)]">
-              Buscar FAQs
-            </label>
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-[var(--color-secondary)]/70" />
-              <Input
-                type="text"
-                placeholder="Buscar FAQs por pergunta ou resposta..."
-                value={searchTerm}
-                onChange={(e: any) => setSearchTerm(e.target.value)}
-                className="bg-[var(--color-background-body)] border-[var(--color-border)] text-[var(--color-secondary)] pl-10"
-              />
-            </div>
-          </div>
-        </Card>
-
-        {/* Mensagem de erro */}
-        {faqValidationError && (
-          <div className={`p-3 rounded-lg ${isFAQLimitReached 
-            ? 'bg-[var(--color-danger)]/10 border border-[var(--color-danger)]/30' 
-            : 'bg-[var(--color-warning)]/10 border border-[var(--color-warning)]/30'}`}>
-            <div className="flex items-start gap-2">
-              {isFAQLimitReached ? (
-                <XCircle className="w-5 h-5 text-[var(--color-danger)] flex-shrink-0 mt-0.5" />
-              ) : (
-                <AlertCircle className="w-5 h-5 text-[var(--color-warning)] flex-shrink-0 mt-0.5" />
-              )}
-              <p className={`text-sm ${isFAQLimitReached 
-                ? 'text-[var(--color-danger)]' 
-                : 'text-[var(--color-warning)]'}`}>
-                {faqValidationError}
-              </p>
-            </div>
-          </div>
-        )}
-
-        {/* Lista de FAQs */}
+        {/* Seção Cabeçalho */}
         <div className="space-y-4">
-          <AnimatePresence>
-            {filteredFAQItems.length === 0 ? (
-              <Card className="p-8 bg-[var(--color-background)]">
-                <div className="text-center">
-                  <HelpCircle className="w-12 h-12 text-[var(--color-secondary)]/50 mx-auto mb-4" />
-                  <h3 className="text-lg font-medium text-[var(--color-secondary)] mb-2">
-                    Nenhum FAQ encontrado
-                  </h3>
-                  <p className="text-sm text-[var(--color-secondary)]/70">
-                    {searchTerm ? 'Tente ajustar sua busca ou limpe o filtro' : 'Adicione seu primeiro FAQ usando o botão abaixo'}
-                  </p>
-                </div>
-              </Card>
-            ) : (
-              <DndContext
-                sensors={sensors}
-                collisionDetection={closestCenter}
-                onDragEnd={handleDragEnd}
-              >
-                <SortableContext
-                  items={stableIds}
-                  strategy={verticalListSortingStrategy}
-                >
-                  {filteredFAQItems.map((item, index) => {
-                    const originalIndex = localFAQs.findIndex(i => i.id === item.id) || index;
-                    const hasQuestion = item.question.trim() !== "";
-                    const hasAnswer = item.answer.trim() !== "";
-                    const isLastInOriginalList = originalIndex === localFAQs.length - 1;
-                    const isLastAndEmpty = isLastInOriginalList && !hasQuestion && !hasAnswer;
+          <SectionHeader
+            title="Cabeçalho da Seção"
+            section="header"
+            icon={Type}
+            isExpanded={expandedSections.header}
+            onToggle={() => toggleSection("header")}
+          />
 
-                    return (
-                      <SortableFAQItem
-                        key={stableIds[index]}
-                        item={item}
-                        index={index}
-                        originalIndex={originalIndex}
-                        isLastInOriginalList={isLastInOriginalList}
-                        isLastAndEmpty={isLastAndEmpty}
-                        showValidation={showValidation}
-                        itemList={localFAQs}
-                        handleChange={handleChange}
-                        openDeleteSingleModal={openDeleteSingleModal}
-                        setNewItemRef={isLastAndEmpty ? setNewItemRef : undefined}
+          <motion.div
+            initial={false}
+            animate={{ height: expandedSections.header ? "auto" : 0 }}
+            className="overflow-hidden"
+          >
+            <Card className="p-6 bg-[var(--color-background)]">
+              <div className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <label className="block text-sm font-medium text-[var(--color-secondary)] mb-2">
+                      Título Principal
+                    </label>
+                    <Input
+                      value={pageData.faqs.title}
+                      onChange={(e) => updateNested('faqs.title', e.target.value)}
+                      placeholder="Dúvidas."
+                      className="bg-[var(--color-background-body)] border-[var(--color-border)] text-[var(--color-secondary)] text-2xl font-bold"
+                    />
+                    <p className="text-xs text-[var(--color-secondary)]/50 mt-2">
+                      Primeira parte do título (geralmente curto e direto)
+                    </p>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-[var(--color-secondary)] mb-2">
+                      Subtítulo
+                    </label>
+                    <Input
+                      value={pageData.faqs.subtitle}
+                      onChange={(e) => updateNested('faqs.subtitle', e.target.value)}
+                      placeholder="E respostas."
+                      className="bg-[var(--color-background-body)] border-[var(--color-border)] text-[var(--color-secondary)] text-2xl font-bold italic"
+                    />
+                    <p className="text-xs text-[var(--color-secondary)]/50 mt-2">
+                      Segunda parte do título (complemento, geralmente em itálico)
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </Card>
+          </motion.div>
+        </div>
+
+        {/* Seção Perguntas */}
+        <div className="space-y-4">
+          <SectionHeader
+            title="Perguntas Frequentes"
+            section="questions"
+            icon={List}
+            isExpanded={expandedSections.questions}
+            onToggle={() => toggleSection("questions")}
+          />
+
+          <motion.div
+            initial={false}
+            animate={{ height: expandedSections.questions ? "auto" : 0 }}
+            className="overflow-hidden"
+          >
+            <Card className="p-6 bg-[var(--color-background)]">
+              <div className="mb-6">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
+                  <div>
+                    <h3 className="text-lg font-semibold text-[var(--color-secondary)] mb-2 flex items-center gap-2">
+                      <HelpCircle className="w-5 h-5" />
+                      Perguntas & Respostas
+                    </h3>
+                    <div className="flex items-center gap-2 mt-1">
+                      <div className="flex items-center gap-1">
+                        <CheckCircle2 className="w-4 h-4 text-green-500" />
+                        <span className="text-sm text-[var(--color-secondary)]/70">
+                          {faqsCompleteCount} de {faqsTotalCount} completas
+                        </span>
+                      </div>
+                      <span className="text-sm text-[var(--color-secondary)]/50">•</span>
+                      <span className="text-sm text-[var(--color-secondary)]/70">
+                        Limite: {currentPlanType === 'pro' ? '12' : '8'} perguntas
+                      </span>
+                    </div>
+                  </div>
+                  <div className="flex flex-col items-end gap-2">
+                    <Button
+                      type="button"
+                      onClick={handleAddFAQ}
+                      variant="primary"
+                      className="whitespace-nowrap bg-[var(--color-primary)] hover:bg-[var(--color-primary)]/90 text-white border-none flex items-center gap-2"
+                      disabled={!canAddNewFAQ}
+                    >
+                      <Plus className="w-4 h-4" />
+                      Adicionar Pergunta
+                    </Button>
+                    {isFAQsLimitReached && (
+                      <p className="text-xs text-red-500 flex items-center gap-1">
+                        <AlertCircle className="w-3 h-3" />
+                        Limite do plano atingido
+                      </p>
+                    )}
+                  </div>
+                </div>
+                <p className="text-sm text-[var(--color-secondary)]/70">
+                  Liste as perguntas mais comuns dos seus clientes e forneça respostas claras e úteis.
+                </p>
+              </div>
+
+              {/* Mensagem de erro */}
+              {faqsValidationError && (
+                <div className={`p-3 rounded-lg ${isFAQsLimitReached ? 'bg-red-900/20 border border-red-800' : 'bg-yellow-900/20 border border-yellow-800'} mb-4`}>
+                  <div className="flex items-start gap-2">
+                    {isFAQsLimitReached ? (
+                      <XCircle className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
+                    ) : (
+                      <AlertCircle className="w-5 h-5 text-yellow-500 flex-shrink-0 mt-0.5" />
+                    )}
+                    <p className={`text-sm ${isFAQsLimitReached ? 'text-red-400' : 'text-yellow-400'}`}>
+                      {faqsValidationError}
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              <div className="space-y-4">
+                {pageData.faqs.questions.map((faq, index) => (
+                  <div 
+                    key={index}
+                    ref={index === pageData.faqs.questions.length - 1 ? newFAQRef : undefined}
+                    draggable
+                    onDragStart={(e) => handleFAQDragStart(e, index)}
+                    onDragOver={(e) => handleFAQDragOver(e, index)}
+                    onDragEnter={handleDragEnter}
+                    onDragLeave={handleDragLeave}
+                    onDragEnd={handleFAQDragEnd}
+                    onDrop={handleDrop}
+                    className={`p-6 border border-[var(--color-border)] rounded-lg transition-all duration-200 ${
+                      draggingFAQ === index 
+                        ? 'border-[var(--color-primary)] bg-[var(--color-primary)]/10' 
+                        : 'hover:border-[var(--color-primary)]/50'
+                    }`}
+                  >
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="flex items-start gap-3 flex-1">
+                        {/* Handle para drag & drop */}
+                        <div 
+                          className="cursor-grab active:cursor-grabbing p-2 hover:bg-[var(--color-background)]/50 rounded transition-colors"
+                          draggable
+                          onDragStart={(e) => handleFAQDragStart(e, index)}
+                        >
+                          <GripVertical className="w-5 h-5 text-[var(--color-secondary)]/70" />
+                        </div>
+                        
+                        {/* Indicador de posição */}
+                        <div className="flex flex-col items-center">
+                          <div className="flex items-center justify-center w-8 h-8 rounded-full bg-[var(--color-primary)]/10 border border-[var(--color-primary)]/30">
+                            <span className="text-sm font-bold text-[var(--color-primary)]">
+                              {index + 1}
+                            </span>
+                          </div>
+                          <div className="w-px h-4 bg-[var(--color-border)] mt-1"></div>
+                        </div>
+                        
+                        <div className="flex-1">
+                          <div className="flex items-center justify-between mb-4">
+                            <div className="flex items-center gap-3">
+                              <h4 className="font-medium text-[var(--color-secondary)]">
+                                {faq.question || "Pergunta vazia"}
+                              </h4>
+                              {isFAQValid(faq) ? (
+                                <span className="px-2 py-1 text-xs bg-green-900/30 text-green-300 rounded-full">
+                                  Completa
+                                </span>
+                              ) : (
+                                <span className="px-2 py-1 text-xs bg-yellow-900/30 text-yellow-300 rounded-full">
+                                  Incompleta
+                                </span>
+                              )}
+                            </div>
+                            
+                            <Button
+                              type="button"
+                              onClick={() => toggleQuestion(index)}
+                              variant="primary"
+                            >
+                              {expandedQuestions.includes(index) ? (
+                                <ChevronUp className="w-4 h-4" />
+                              ) : (
+                                <ChevronDown className="w-4 h-4" />
+                              )}
+                            </Button>
+                          </div>
+                          
+                          <motion.div
+                            initial={false}
+                            animate={{ height: expandedQuestions.includes(index) ? "auto" : 0 }}
+                            className="overflow-hidden"
+                          >
+                            <div className="space-y-6 pt-4 border-t border-[var(--color-border)] px-2">
+                              <div>
+                                <label className="block text-sm font-medium text-[var(--color-secondary)] mb-2">
+                                  Pergunta
+                                </label>
+                                <Input
+                                  value={faq.question}
+                                  onChange={(e) => handleUpdateFAQ(index, 'question', e.target.value)}
+                                  placeholder="Ex: Como a IA ajuda no meu atendimento pelo WhatsApp?"
+                                  className="bg-[var(--color-background-body)] border-[var(--color-border)] text-[var(--color-secondary)] text-lg font-semibold"
+                                />
+                              </div>
+
+                              <div>
+                                <label className="block text-sm font-medium text-[var(--color-secondary)] mb-2">
+                                  Resposta
+                                </label>
+                                <TextArea
+                                  value={faq.answer}
+                                  onChange={(e) => handleUpdateFAQ(index, 'answer', e.target.value)}
+                                  placeholder="Ex: Implementamos chatbots inteligentes que qualificam leads e respondem dúvidas comuns 24h por dia. Isso garante que você só gaste tempo com clientes prontos para fechar negócio."
+                                  rows={4}
+                                  className="bg-[var(--color-background-body)] border-[var(--color-border)] text-[var(--color-secondary)]"
+                                />
+                              </div>
+                            </div>
+                          </motion.div>
+                        </div>
+                      </div>
+                      
+                      <div className="flex flex-col gap-2">
+                        <Button
+                          type="button"
+                          onClick={() => handleRemoveFAQ(index)}
+                          variant="danger"
+                          className="whitespace-nowrap bg-red-600 hover:bg-red-700 border-none flex items-center gap-2"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                          Remover
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </Card>
+          </motion.div>
+        </div>
+
+        {/* Seção CTA */}
+        <div className="space-y-4">
+          <SectionHeader
+            title="Call to Action Final"
+            section="cta"
+            icon={MessageCircle}
+            isExpanded={expandedSections.cta}
+            onToggle={() => toggleSection("cta")}
+          />
+
+          <motion.div
+            initial={false}
+            animate={{ height: expandedSections.cta ? "auto" : 0 }}
+            className="overflow-hidden"
+          >
+            <Card className="p-6 bg-[var(--color-background)]">
+              <div className="space-y-8">
+                <div className="space-y-6">
+                  <h3 className="text-lg font-semibold text-[var(--color-secondary)] flex items-center gap-2">
+                    <Zap className="w-5 h-5" />
+                    Chamada para Ação
+                  </h3>
+                  
+                  <div className="grid grid-cols-1 gap-6">
+                    <div>
+                      <label className="block text-sm font-medium text-[var(--color-secondary)] mb-2">
+                        Texto do CTA
+                      </label>
+                      <TextArea
+                        value={pageData.faqs.cta.text}
+                        onChange={(e) => updateNested('faqs.cta.text', e.target.value)}
+                        placeholder="Pronto para escalar? Fale com Marcos Ramos agora"
+                        rows={2}
+                        className="bg-[var(--color-background-body)] border-[var(--color-border)] text-[var(--color-secondary)] text-lg font-semibold"
                       />
-                    );
-                  })}
-                </SortableContext>
-              </DndContext>
-            )}
-          </AnimatePresence>
+                      <p className="text-xs text-[var(--color-secondary)]/50 mt-2">
+                        Texto persuasivo que incentiva o contato após ler as FAQs
+                      </p>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-[var(--color-secondary)] mb-2 flex items-center gap-2">
+                        <Link className="w-4 h-4" />
+                        Link do Botão
+                      </label>
+                      <Input
+                        value={pageData.faqs.cta.link}
+                        onChange={(e) => updateNested('faqs.cta.link', e.target.value)}
+                        placeholder="https://wa.me/5514991779502"
+                        className="bg-[var(--color-background-body)] border-[var(--color-border)] text-[var(--color-secondary)] font-mono"
+                      />
+                      <div className="text-xs text-[var(--color-secondary)]/50 mt-2 space-y-1">
+                        <p><strong>WhatsApp:</strong> https://wa.me/5514991779502</p>
+                        <p><strong>Link Interno:</strong> #solucoes, #contato</p>
+                        <p><strong>URL Externa:</strong> https://seusite.com.br/contato</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </Card>
+          </motion.div>
         </div>
 
         <FixedActionBar
           onDeleteAll={openDeleteAllModal}
           onSubmit={handleSubmit}
-          onAddNew={handleAddFAQItem}
-          isAddDisabled={!canAddNewItem}
+          isAddDisabled={false}
           isSaving={loading}
           exists={!!exists}
+          completeCount={completion.completed}
           totalCount={completion.total}
-          itemName="FAQ"
+          itemName="FAQs"
           icon={HelpCircle}
         />
       </form>
@@ -599,14 +661,17 @@ export default function CreateFAQ({
       <DeleteConfirmationModal
         isOpen={deleteModal.isOpen}
         onClose={closeDeleteModal}
-        onConfirm={() => confirmDelete(updateFAQs)}
+        onConfirm={confirmDelete}
         type={deleteModal.type}
         itemTitle={deleteModal.title}
-        totalItems={localFAQs.length}
-        itemName="FAQ"
+        totalItems={pageData.faqs.questions.length}
+        itemName="Pergunta"
       />
 
-      <FeedbackMessages success={success} errorMsg={errorMsg} />
+      <FeedbackMessages 
+        success={success} 
+        errorMsg={errorMsg} 
+      />
     </ManageLayout>
   );
 }

@@ -25,9 +25,45 @@
         },
         {
           "type": "item",
-          "name": "Detalhes",
+          "name": "Header",
           "icon": "HelpCircle",
-          "href": "/details"
+          "href": "/header"
+        },
+        {
+          "type": "item",
+          "name": "Headline",
+          "icon": "HelpCircle",
+          "href": "/headline"
+        },
+        {
+          "type": "item",
+          "name": "Antíteses",
+          "icon": "HelpCircle",
+          "href": "/antitheses"
+        },
+        {
+          "type": "item",
+          "name": "Vídeo",
+          "icon": "HelpCircle",
+          "href": "/video"
+        },
+        {
+          "type": "item",
+          "name": "Estratégia",
+          "icon": "HelpCircle",
+          "href": "/strategic"
+        },
+        {
+          "type": "item",
+          "name": "Serviços",
+          "icon": "HelpCircle",
+          "href": "/services"
+        },
+        {
+          "type": "item",
+          "name": "Autoridade",
+          "icon": "HelpCircle",
+          "href": "/authority"
         },
         {
           "type": "item",
@@ -37,21 +73,9 @@
         },
         {
           "type": "item",
-          "name": "Hightlight",
+          "name": "Rodapé",
           "icon": "HelpCircle",
-          "href": "/hightlight"
-        },
-        {
-          "type": "item",
-          "name": "Newsletter",
-          "icon": "HelpCircle",
-          "href": "/news"
-        },
-        {
-          "type": "item",
-          "name": "Setores",
-          "icon": "HelpCircle",
-          "href": "/setors"
+          "href": "/footer"
         }
       ]
     }
